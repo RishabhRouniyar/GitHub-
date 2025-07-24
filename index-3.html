@@ -1,0 +1,171 @@
+<!-- index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Attendance Form</title>
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(135deg, #041795, #f1f1f1);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+      flex-direction: column;
+      color: white;
+    }
+    .form-container {
+      background: rgba(61, 11, 176, 0.1);
+      padding: 30px;
+      border-radius: 20px;
+      backdrop-filter: blur(10px);
+      width: 90%;
+      max-width: 400px;
+      text-align: center;
+    }
+    input, select, button {
+      width: 100%;
+      margin: 10px 0;
+      padding: 12px;
+      border-radius: 10px;
+      border: none;
+    }
+    .student-photo {
+      width: 150px;
+      height: 150px;
+      object-fit: cover;
+      border-radius: 50%;
+      margin: 10px auto;
+      display: block;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+    }
+    .btn {
+      background: linear-gradient(to right, #ff512f, #dd2476);
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      transition: transform 0.3s;
+    }
+    .btn:hover {
+      transform: scale(1.05);
+    }
+    .btn-secondary {
+      background: linear-gradient(to right, #150290, #182848);
+    }
+    .message {
+      margin-top: 15px;
+      padding: 10px;
+      border-radius: 5px;
+      display: none;
+    }
+    .success { background-color: rgba(0, 255, 0, 0.2); display: block; }
+    .error { background-color: rgba(255, 0, 0, 0.2); display: block; }
+  </style>
+</head>
+<body>
+
+  <!-- JIS University Logo -->
+  <div style="display: flex; justify-content: center;">
+    <img src="jis.jpg.png" alt="JIS University Logo" style="width: 150px; margin-bottom: 20px;">
+  </div>
+
+  <h1>Attendance Form</h1>
+
+  <div class="form-container">
+    <input type="number" id="rollNoInput" placeholder="Enter Roll Number" oninput="fetchStudent()">
+    <input type="text" id="nameInput" placeholder="Name" readonly>
+    <input type="text" id="classInput" placeholder="Class" readonly>
+
+    <img id="photoPreview" class="student-photo" src="" alt="Student Photo" style="display: none;">
+
+    <select id="statusSelect">
+      <option value="Present">Present</option>
+      <option value="Absent">Absent</option>
+    </select>
+
+    <button class="btn" onclick="saveAttendance()">Mark Attendance</button>
+    <button class="btn btn-secondary" onclick="resetForm()">Next Student</button>
+    <button class="btn" onclick="goToRecords()">View Records</button>
+
+    <div id="message" class="message"></div>
+  </div>
+
+<script>
+const studentsData = {
+  1: { name: "Rishabh Rouniyar", className: "BCA 1st", photo: "images/r.jpg.jpeg" },
+  2: { name: "Ayush Mishra", className: "BCA 1st", photo: "images/ayushmishra.jpg" },
+  3: { name: "Himanshu", className: "BCA 1st", photo: "images/himu.jpg" },
+  4: { name: "Aditya", className: "BCA 1st", photo: "images/adi.jpg.jpg" },
+  5: { name: "Gulsan", className: "BCA 1st", photo: "images/gulsan.jpg.jpeg" },
+  6: { name: "Eklavya Yagnik", className: "BCA 1st", photo: "images/EKLAVYA.JPG.jpeg" },
+  7: { name: "Akshdeep Kailey", className: "BCA 1st", photo: "images/akshdeep.jpg.jpeg" },
+  8: { name: "Rajdeep", className: "BCA 1st", photo: "images/rajdeep.jpg" },
+  9: { name: "Nitin", className: "BCA 1st", photo: "images/nitin.jpg" },
+  10: { name: "Roshan", className: "B-TECH 1st", photo: "images/roshan.jpg.jpeg" },
+  11: { name: "Dhoni", className: "BCA 1st", photo: "images/dhoni.jpg" }
+};
+
+function fetchStudent() {
+  const rollNo = document.getElementById('rollNoInput').value;
+  const student = studentsData[rollNo];
+  const photo = document.getElementById('photoPreview');
+
+  if (student) {
+    document.getElementById('nameInput').value = student.name;
+    document.getElementById('classInput').value = student.className;
+    photo.src = student.photo;
+    photo.style.display = "block";
+  } else {
+    document.getElementById('nameInput').value = "";
+    document.getElementById('classInput').value = "";
+    photo.style.display = "none";
+  }
+}
+
+function saveAttendance() {
+  const rollNo = document.getElementById('rollNoInput').value;
+  const student = studentsData[rollNo];
+  const status = document.getElementById('statusSelect').value;
+
+  if (student) {
+    let students = JSON.parse(localStorage.getItem('students')) || [];
+    students.push({
+      rollNo,
+      name: student.name,
+      className: student.className,
+      photo: student.photo,
+      status,
+      date: new Date().toLocaleString()
+    });
+    localStorage.setItem('students', JSON.stringify(students));
+    showMessage(`Attendance marked for ${student.name} (${status})`, 'success');
+  } else {
+    showMessage('Roll Number not found!', 'error');
+  }
+}
+
+function resetForm() {
+  document.getElementById('rollNoInput').value = '';
+  document.getElementById('nameInput').value = '';
+  document.getElementById('classInput').value = '';
+  document.getElementById('photoPreview').style.display = "none";
+  document.getElementById('statusSelect').value = "Present";
+}
+
+function goToRecords() {
+  window.location.href = "auth.html";
+}
+
+function showMessage(text, type) {
+  const message = document.getElementById('message');
+  message.textContent = text;
+  message.className = `message ${type}`;
+  message.style.display = "block";
+  setTimeout(() => { message.style.display = "none"; }, 3000);
+}
+</script>
+
+</body>
+</html>

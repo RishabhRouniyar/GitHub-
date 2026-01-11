@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Attendance Records</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(135deg, #1f4037, #99f2c8);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      color: white;
+      padding: 20px;
+    }
+
+    .container {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 30px;
+      border-radius: 20px;
+      width: 90%;
+      max-width: 900px;
+      backdrop-filter: blur(10px);
+      margin-top: 20px;
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      margin-top: 20px;
+      border-collapse: collapse;
+    }
+
+    th, td {
+      padding: 12px;
+      text-align: center;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    th {
+      background: rgba(0, 0, 0, 0.4);
+      position: sticky;
+      top: 0;
+    }
+
+    tr:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    .student-photo {
+      width: 50px;
+      height: 50px;
+      object-fit: cover;
+      border-radius: 50%;
+    }
+
+    .btn-container {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 20px;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .btn {
+      padding: 10px 20px;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: transform 0.3s;
+      flex-grow: 1;
+    }
+
+    .btn:hover {
+      transform: scale(1.05);
+    }
+
+    .btn-primary {
+      background: linear-gradient(to right, #ff512f, #dd2476);
+    }
+
+    .btn-secondary {
+      background: linear-gradient(to right, #4b6cb7, #182848);
+    }
+
+    .btn-danger {
+      background: linear-gradient(to right, #ff416c, #ff4b2b);
+    }
+
+    .status-present {
+      color: #4CAF50;
+      font-weight: bold;
+    }
+
+    .status-absent {
+      color: #F44336;
+      font-weight: bold;
+    }
+
+    .search-container {
+      margin-bottom: 20px;
+      width: 100%;
+    }
+
+    #searchInput {
+      width: 100%;
+      padding: 10px;
+      border-radius: 8px;
+      border: none;
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
+    }
+
+    #searchInput::placeholder {
+      color: rgba(255, 255, 255, 0.7);
+    }
+
+    .date-header {
+      background: rgba(0, 0, 0, 0.3) !important;
+      font-size: 1.1em;
+    }
+
+    .empty-message {
+      text-align: center;
+      padding: 20px;
+      font-style: italic;
+    }
+
+    @media print {
+      .btn-container,
+      .search-container {
+        display: none;
+      }
+
+      body {
+        background: white;
+        color: black;
+      }
+
+      .container {
+        background: none;
+        box-shadow: none;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- JIS University Logo -->
+  <div style="text-align: center; margin-bottom: 20px;">
+    <img src="jis.jpg.png" alt="JIS University Logo" style="max-width: 150px; border-radius: 10px;">
+  </div>
+
+  <h2>Attendance Records</h2>
+
+  <div class="container">
+    <div class="search-container">
+      <input type="text" id="searchInput" placeholder="Search by name, class, or roll number..." oninput="filterRecords()">
+    </div>
+
+    <table id="recordsTable">
+      <thead>
+        <tr>
+          <th>Photo</th>
+          <th>Name</th>
+          <th>Class</th>
+          <th>Roll No</th>
+          <th>Status</th>
+          <th>Date/Time</th>
+        </tr>
+      </thead>
+      <tbody id="recordsBody">
+        <!-- Records will load here -->
+      </tbody>
+    </table>
+
+    <div class="btn-container">
+      <button class="btn btn-primary" onclick="goToForm()">Back to Form</button>
+      <button class="btn btn-secondary" onclick="refreshRecords()">Refresh Records</button>
+      <button class="btn btn-secondary" onclick="window.print()">🖨️ Print Records</button>
+      <button class="btn btn-danger" onclick="clearAllRecords()">Clear All Records</button>
+    </div>
+  </div>
+
+<script>
+let allRecords = [];
+
+function loadRecords() {
+  const records = localStorage.getItem('students');
+  allRecords = records ? JSON.parse(records) : [];
+  const tableBody = document.getElementById('recordsBody');
+  tableBody.innerHTML = "";
+
+  if (allRecords.length === 0) {
+    tableBody.innerHTML = `
+      <tr>
+        <td colspan="6" class="empty-message">No attendance records found.</td>
+      </tr>
+    `;
+    return;
+  }
+
+  const recordsByDate = {};
+  allRecords.forEach(record => {
+    const date = record.date ? record.date.split(',')[0] : 'No Date';
+    if (!recordsByDate[date]) {
+      recordsByDate[date] = [];
+    }
+    recordsByDate[date].push(record);
+  });
+
+  for (const date in recordsByDate) {
+    const dateRow = document.createElement('tr');
+    dateRow.className = 'date-header';
+    dateRow.innerHTML = `<td colspan="6">${date}</td>`;
+    tableBody.appendChild(dateRow);
+
+    recordsByDate[date].forEach(student => {
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td><img src="${student.photo || 'images/default.jpg'}" class="student-photo" onerror="this.src='images/default.jpg'"></td>
+        <td>${student.name}</td>
+        <td>${student.className}</td>
+        <td>${student.rollNo}</td>
+        <td class="status-${student.status.toLowerCase()}">${student.status}</td>
+        <td>${student.date || 'N/A'}</td>
+      `;
+      tableBody.appendChild(row);
+    });
+  }
+}
+
+function filterRecords() {
+  const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+  if (!searchTerm) {
+    loadRecords();
+    return;
+  }
+
+  const tableBody = document.getElementById('recordsBody');
+  tableBody.innerHTML = "";
+
+  const filteredRecords = allRecords.filter(student =>
+    student.name.toLowerCase().includes(searchTerm) ||
+    student.className.toLowerCase().includes(searchTerm) ||
+    student.rollNo.toString().includes(searchTerm) ||
+    student.status.toLowerCase().includes(searchTerm)
+  );
+
+  if (filteredRecords.length === 0) {
+    tableBody.innerHTML = `
+      <tr>
+        <td colspan="6" class="empty-message">No matching records found.</td>
+      </tr>
+    `;
+    return;
+  }
+
+  const recordsByDate = {};
+  filteredRecords.forEach(record => {
+    const date = record.date ? record.date.split(',')[0] : 'No Date';
+    if (!recordsByDate[date]) {
+      recordsByDate[date] = [];
+    }
+    recordsByDate[date].push(record);
+  });
+
+  for (const date in recordsByDate) {
+    const dateRow = document.createElement('tr');
+    dateRow.className = 'date-header';
+    dateRow.innerHTML = `<td colspan="6">${date}</td>`;
+    tableBody.appendChild(dateRow);
+
+    recordsByDate[date].forEach(student => {
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td><img src="${student.photo || 'images/default.jpg'}" class="student-photo" onerror="this.src='images/default.jpg'"></td>
+        <td>${student.name}</td>
+        <td>${student.className}</td>
+        <td>${student.rollNo}</td>
+        <td class="status-${student.status.toLowerCase()}">${student.status}</td>
+        <td>${student.date || 'N/A'}</td>
+      `;
+      tableBody.appendChild(row);
+    });
+  }
+}
+
+function goToForm() {
+  window.location.href = "index.html";
+}
+
+function refreshRecords() {
+  loadRecords();
+  document.getElementById('searchInput').value = '';
+}
+
+function clearAllRecords() {
+  if (confirm("Are you sure you want to clear ALL attendance records?")) {
+    localStorage.removeItem('students');
+    loadRecords();
+  }
+}
+
+document.addEventListener('DOMContentLoaded', loadRecords);
+</script>
+
+</body>
+</html>
